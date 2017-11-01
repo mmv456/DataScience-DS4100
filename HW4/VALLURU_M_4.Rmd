@@ -1,0 +1,198 @@
+---
+title: "VALLURU_M_4"
+output: html_notebook
+---
+
+Install packages
+```{r}
+install.packages("openxlsx", dependencies = TRUE)
+
+library(openxlsx)    # used to open the .xlsx file
+library(lubridate)   # used to clean up the dates
+library(stringr)     # used to rewrite strings
+```
+
+
+
+Set the working directory
+```{r}
+setwd("D:/Mahitha/DataScience/HW4")
+```
+
+
+
+
+
+Function that loads the data frame
+```{r}
+
+loadDF <- function() {
+  if(!exists("farmersmarkets")) {
+    farmersmarkets <- read.xlsx("2013FarmersMarkets.xlsx", startRow=3)
+  }
+}
+
+```
+
+
+Load the data frame
+```{r}
+loadDF()
+```
+
+We will have to delete the records that have NA as in its Season1Date column.
+```{r}
+cleanDatesDF <- farmersmarkets[which(!is.na(farmersmarkets["Season1Date"])),]
+farmersmarkets <- cleanDatesDF
+```
+
+We will have to make rules about the seasons:
+WINTER = December, January, February
+SPRING = March, April, May
+SUMMER = June, July, August
+FALL   = Septemebr, October, November
+Half-year = Between 180 and 300 days
+Full-year = 300+ days
+```{r}
+threeColumns <- as.data.frame(str_split_fixed(farmersmarkets$Season1Date, " ", n=3)) # split into 3 columns
+
+```
+
+So if we have "MM/DD/YY to MM/DD/YY", we will split it into 3 columns that separate it into "MM/DD/YY", "to", and "MM/DD/YY"
+```{r}
+colnames(threeColumns) <- c("first_date", "grammar", "second_date")
+threeColumns$first_date <- as.character(threeColumns$first_date) # standardize all dates as characters for now
+threeColumns$second_date <- as.character(threeColumns$second_date) # standardize all dates as characters for now
+```
+
+Remove the values with NA as the second_date value
+```{r}
+cleanSecondDatesDF <- threeColumns[which(!is.na(threeColumns["second_date"])),]
+farmersmarkets <- cleanSecondDatesDF
+```
+
+
+
+Now, we have to create a function that helps us classify which dates go with the month.
+```{r}
+scale <- data.frame(month = c("January","February","March",
+                               "April","May","June",
+                              "July","August","September",
+                              "October","November","December"),
+
+                     date = c("01/01/2012", "02/01/2012",
+                                      "03/01/2012", "04/01/2012",
+                                      "05/01/2012", "06/01/2012",
+                                      "07/01/2012", "08/01/2012",
+                                      "09/01/2012", "10/01/2012",
+                                      "11/01/2012", "12/01/2012"))
+```
+
+
+Classify as the date
+```{r}
+scale$date <- as.Date(helper$date, format = "%m/%d/%Y")
+```
+
+
+Convert all the dates so that they are in the same format
+```{r}
+dateConversion <- function(x){
+if(!str_detect(x, '/') == TRUE){ # if the observation doesn't contain '/'...
+  data <- as.Date(scale$date[match(x,scale$month)]) #...use the scale helper table and classify it as a date
+} 
+  else{
+    data <- as.Date(x, format = "%m/%d/%Y") # otherwise turn it into a date object
+  }
+  return(as.Date(data))
+}
+```
+
+
+
+
+Using the farmersmarkets data frame, insert the new date
+```{r}
+
+farmersmarkets$first_date <- as.Date(sapply(threeColumns$first_date, dateConversion),origin = "1970-01-01") 
+farmersmarkets$second_date <- as.Date(sapply(threeColumns$second_date, dateConversion),origin = "1970-01-01") 
+farmersmarkets$time_diff <- farmersmarkets$second_date - farmersmarkets$first_date 
+farmersmarkets$half_way <- farmersmarkets$time_diff/2 + farmersmarkets$first_date 
+
+
+
+```
+
+
+Function to determine date
+```{r}
+getSeason <- function(DATES) {
+  WI <- as.Date("2012-12-01", format = "%Y-%m-%d") # WINTER
+  SP <- as.Date("2012-3-01",  format = "%Y-%m-%d") # SPRING
+  SU <- as.Date("2012-6-01",  format = "%Y-%m-%d") # SUMMER
+  FA <- as.Date("2012-9-01",  format = "%Y-%m-%d") # FALL
+  
+  # Convert dates from any year to 2012 dates
+  d <- as.Date(strftime(DATES, format="2012-%m-%d"))
+  
+  ifelse (d >= WI | d <  SP, "Winter", 
+          ifelse (d >=  SP & d < SU, "Spring",
+                  ifelse (d >= SU & d < FA, "Summer", "Fall")))
+}
+
+```
+
+
+For loop to apply the function to each date
+```{r}
+for(i in 1:nrow(farmersmarkets)){ # for each row in the farmersmarkets data frame
+  if(is.na(farmersmarkets$time_diff[i])){ # if the record is NA give the period NA
+    farmersmarkets$period[i] <- NA 
+  } 
+  else {
+    if(farmersmarkets$time_diff[i] <= 180){  # if time period is less than 180 days
+      farmersmarkets$period[i] <- getSeason(farmersmarkets$half_way[i]) # we should consider it a season: Winter, Spring, Summer or Fall based on the date at the half way point of the time interval
+    } 
+    else if ((farmersmarkets$time_diff[i] <= 300) ==TRUE){ # if it's greater than 180, but less than 300
+      farmersmarkets$period[i] <- "Half-Year" # we'll consider it a "Half-Year" 
+    } 
+    else {
+      farmersmarkets$period[i] <- "Full-Year" # for anything else greater than 300 days, we'll consider it a full year, the reasoning being it wouldn't be appropriate to call, for example, a 10-month long farmer's market a "half year" one. 
+    }
+  }
+  i <- i + 1 # keep the for loop going
+}
+```
+
+
+
+Add farmersmarkets$period that contains all of the season categories:
+```{r}
+farmersmarkets$period <- as.factor(farmersmarkets$period)
+
+print(farmersmarkets$period)
+
+
+```
+
+
+
+Create a function that determines which markets accept WIC
+```{r}
+
+# Function: acceptsWIC
+# Finds all the markets which accept WIC
+# Args: None
+# Returns: a dataframe containing all of the markets which accept WIC
+acceptsWIC <- function() {
+  result <- farmers_markets[which(farmers_markets["WIC"] == "Y"),]
+  return(result)
+}
+```
+
+
+
+
+
+
+
