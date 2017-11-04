@@ -1,0 +1,104 @@
+---
+title: "VALLURU_M_5"
+output: html_notebook
+---
+
+Load any required libraries.
+```{r}
+library(XML)
+```
+
+
+Function that loads the data.
+Args: None
+Returns: None
+```{r}
+loadDF <- function() {
+  if (!exists("senators")) {
+    senators <- xmlToDataFrame("http://ds4100.weebly.com/uploads/8/6/5/9/8659576/senators.xml")
+  }
+}
+```
+
+Loads the data frame.
+```{r}
+loadDF()
+```
+
+
+
+Returns all of the names of senators from the given state.
+Args: STATE - the abbreviation of one of the 50 US states.
+Returns: A vector of all of the senators that are form the given state.
+```{r}
+senatorsFrom <- function(STATE) {
+  
+  # creates a new dataframe with all of the senators from the given state
+  byState <- senators[senators$state == STATE,]
+  
+  # for loop that adds the first and last names of the senators to a vector
+  for(i in 1:nrow(byState)) {
+    namesByState <- paste(byState$first_name, byState$last_name) # I did it by first name then last name
+  }
+  
+  # return the vector
+  return(namesByState)
+}
+```
+
+
+
+
+Returns the phone number of the given senator.
+Args: NAME - an argument that represents the name of the senator. The format is "lastname, firstname" in a string.
+Returns: A phone number of the given senator.
+```{r}
+senatorPhone <- function(NAME) {
+  
+  # Create a dataframe with 3 columns:
+  # - last_name
+  # - first_name
+  # - phone
+  cleanNames <- senators[, c(2,3,7)]
+  
+  # Create a new column in the cleanNames dataframe
+  cleanNames$combine <- " "
+  
+  # With this new column, fill it with the last and first names combined
+  for(i in 1:nrow(cleanNames)) {
+    name <- paste(cleanNames[i,1], cleanNames[i,2], sep = ", ") # combine last and first, separated by a comma
+    cleanNames[i,4] <- name # add this name to the appropriate row of the column
+  }
+  
+  # new for loop for comparing if the given name equals any of the names in the dataframe
+  # I made a new for loop instead of just using the for loop above because this loop is for a different purpose,
+  # so I thought thi was effective.
+  for(i in 1:nrow(cleanNames)) {
+    # converts the name in the row of the combine column into a string to compare
+    stringConvert <- toString(cleanNames[i,4])
+    # compares the given to the element in the dataframe
+    if(stringConvert == NAME) { 
+      return(cleanNames[i,3])
+      }
+  }
+  
+  
+}
+```
+
+
+
+
+
+Creates a dataframe with all of the senators' last names sorted and phone numbers.
+Args: None
+Returns: None.
+```{r}
+listSenators <- function() {
+  # create a new dataframe
+  lastPhone <- senators[, c(2, 7)] # keep in mind that the last names are already sorted, so there is no need to sort
+  
+}
+```
+
+
