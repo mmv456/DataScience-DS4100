@@ -1,0 +1,413 @@
+---
+title: "VALLURU_M_6"
+output: html_notebook
+---
+
+
+
+Load any necessary libraries.
+
+
+
+```{r}
+
+
+
+library(XML)
+
+```
+
+
+Function that helps to load the dataframe.
+```{r}
+
+
+
+loadBiddingDF <- function() {
+  if (!exists("bidding")) {
+    biddingParse <- xmlTreeParse("http://aiweb.cs.washington.edu/research/projects/xmltk/xmldata/data/auctions/ebay.xml", useInternalNodes = TRUE)
+    biddingRoot <- xmlRoot(biddingParse)
+  }
+}
+```
+
+
+
+```{r}
+loadBiddingDF()
+```
+
+
+
+Now that we have done this, we can now see more information about the data.
+When typing in
+```{r}
+xmlName(biddingRoot)
+```
+We get the result: [1] "root"
+
+
+
+Now to see how many child nodes there are, we can use
+```{r}
+names(biddingRoot)
+```
+And that gives us: [1] "listing" "listing" "listing" "listing" "listing"
+So there are 5 listings in this set.
+
+
+
+Now we can look more into what categories there are by using
+```{r}
+names(biddingRoot[[1]])
+```
+And we get:
+ seller_info           payment_types           shipping_info   buyer_protection_info            auction_info 
+"seller_info"         "payment_types"         "shipping_info" "buyer_protection_info"          "auction_info" 
+
+ bid_history               item_info 
+"bid_history"             "item_info" 
+
+
+
+
+
+We know that the number of bids is under the "Auction info" section, so we should go through each listing and create a dataframe with all of the listings' names and the number if highest bids they have.
+```{r}
+# Create a dataframe with empty values for now, but they will be filled soon
+Name = c(NA, NA, NA, NA, NA)            # for the name of the auction
+NumberBids = c(NA, NA, NA, NA, NA)      # for keeping track of how many bids occurred in each auction
+bidsDF = data.frame(Name, NumberBids)   # creates teh data frame with the two columns
+```
+
+
+
+To get names, we need to get the xml Value of each listing.
+This function will update the names of the auctions for all 5 listings.
+Args: None
+Returns: None
+```{r}
+loadNames <- function() {
+  # a for loop to go through each row in the Name column
+  for(i in 1:nrow(bidsDF)) {
+    # grabs the specific name of the auction from the XML tree
+    bidsDF[i,1] <- xmlValue(biddingRoot[[i]][[1]][[1]])
+  }
+}
+
+```
+
+
+
+
+
+
+To get the number of bids, we need to get the xml value of each listing.
+This function will update all the numbers of bids the respective auction received for all 5 listings.
+Args: None
+Returns: None
+```{r}
+loadBidNumbers <- function() {
+  # a for loop to go through each row in the NumberBids column
+  for(i in 1:nrow(bidsDF)) {
+    # grabs the specific number from the XML tree
+    bidsDF[i,2] <- as.numeric(xmlValue(biddingRoot[[i]][[5]][[5]]))
+  }
+}
+
+```
+
+
+
+
+
+
+Determines the number of auctions that had more than 5 bids.
+Args: None
+Returns: A number that represents the number of auctions with more than 5 bids.
+```{r}
+moreFiveBids <- function() {
+  # a counter to keep track of the number of auctions with more than 5 bids
+  track = 0 
+  # a for loop that goes through each row in the bidsDF dataframe
+  for(i in 1:nrow(bidsDF)) {
+    # if statement to decide if the number of bids for a particular auction is more than 5
+    if(as.numeric(bidsDF[i,2]) > 5) { 
+      track = track + 1 # if so, add 1 to the counter
+    }
+  }
+  # return the counter
+  return(track)
+}
+```
+
+
+
+```{r}
+moreFiveBids()
+```
+
+
+SECOND QUESTION
+
+
+```{r}
+install.packages("RCurl")
+install.packages("bitops")
+install.packages("xml2")
+library(bitops)
+library(RCurl)
+library(XML)
+library(xml2)
+```
+
+
+
+Trade
+```{r}
+loadTradeDF <- function() {
+  fileURL <- "file://D:/Mahitha/DataScience/HW6/getHistory15.xml"
+  xData <- getURL(fileURL)
+  doc <- xmlTreeParse(xData)
+  tradeRoot <- xmlRoot(doc)
+}
+```
+
+
+
+```{r}
+xmlName(tradeRoot)
+```
+
+
+
+```{r}
+names(doc[[1]][[1]])
+
+```
+
+
+
+As you can see, the very first one does not count, as it is just information and has nothing to do with the actual data.
+```{r}
+names(doc[[1]][[1]][[1]])
+```
+
+
+This is a more appropriate look into what categories there are.
+```{r}
+names(doc[[1]][[1]][[2]])
+```
+
+
+
+Create a data frame
+```{r}
+Symbol = c(NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+           NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+           NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+           NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+           NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+           NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+           NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+           NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+           NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+           NA,NA,NA)
+TimeStart = c(NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+              NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+              NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+              NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+              NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+              NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+              NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+              NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+              NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+              NA,NA,NA)
+TimeEnd = c(NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+            NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+            NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+            NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+            NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+            NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+            NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+            NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+            NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+            NA,NA,NA)
+Price = c(NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+          NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+          NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+          NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+          NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+          NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+          NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+          NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+          NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+          NA,NA,NA)
+Volume = c(NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+           NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+           NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+           NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+           NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+           NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+           NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+           NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+           NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,
+           NA,NA,NA)
+
+tradesDF <- data.frame(Symbol, TimeStart, TimeEnd, Price, Volume)
+```
+
+
+
+
+Fill in the dataframe for Symbol
+```{r}
+
+loadSymbol <- function() {
+  for(i in 2:nrow(tradesDF)) {
+    tradesDF[i,1] <- xmlValue(doc[[1]][[1]][[i]][[1]])
+  }
+}
+
+
+
+```
+
+
+
+Fill in the dataframe for TimeStart
+```{r}
+
+loadTimeStart <- function() {
+  for(i in 2:nrow(tradesDF)) {
+    tradesDF[i,2] <- substr(xmlValue(doc[[1]][[1]][[i]][[2]]), 12, 19)
+  }
+}
+
+
+
+```
+
+
+
+FIll in the dataframe for TimeEnd
+```{r}
+
+
+loadTimeEnd <- function() {
+  for(i in 2:nrow(tradesDF)) {
+    tradesDF[i,3] <- substr(xmlValue(doc[[1]][[1]][[i]][[2]]), 21, 27)
+  }
+}
+```
+
+
+Fill in the dataframe for the highest closing Price
+```{r}
+
+
+loadPrice <- function() {
+  for(i in 2:nrow(tradesDF)) {
+    tradesDF[i,4] <- as.numeric(xmlValue(doc[[1]][[1]][[i]][[7]]))
+  }
+}
+```
+
+
+
+
+Fill in the dataframe for the Volume
+```{r}
+
+loadVOlume <- function() {
+  for(i in 2:nrow(tradesDF)) {
+    tradesDF[i,5] <- as.numeric(xmlValue(doc[[1]][[1]][[i]][[8]]))
+  }
+}
+```
+
+
+
+Because the first row is negligible, we will create a new dataframe without the first row.
+```{r}
+tradesDF <- tradesDF[-1,]
+```
+
+
+
+
+
+
+Calculates the maximum closing price for the security.
+Args: None
+Returns: None
+```{r}
+highestClosingPrice <- function() {
+  return(apply(tradesDF,4, max, trim = 0))
+}
+```
+
+
+
+
+
+Calculates the total volume that was traded for the day.
+Args: None
+Returns: A number indicating the volume that was traded.
+```{r}
+totalVolume <- function() {
+  counter <- 0
+  
+  for(i in 1:92) {
+    counter = counter + tradesDF[i,5]
+  }
+  
+  return(counter)
+}
+```
+
+
+
+
+
+Analyzes the average trading volume for that particular day by the hour.
+Args: None.
+Returns: A dataframe that consists of the hour and the average trading colume for that hour.
+```{r}
+averageVolume <- function() {
+  zero <- c(NA, NA)
+  one <- c(NA, NA)
+  two <- c(NA, NA)
+  three <- c(NA, NA)
+  four <- c(NA, NA)
+  five <- c(NA, NA)
+  six <- c(NA, NA)
+  seven <- c(NA, NA)
+  eight <- c(NA, NA)
+  nine <- c(NA, NA)
+  ten <- c(NA, NA)
+  eleven <- c(NA, NA)
+  twelve <- c(NA, NA)
+  thirteen <- c(NA, NA)
+  fourteen <- c(NA, NA)
+  fifteen <- c(NA, NA)
+  sixteen <- c(NA, NA)
+  seventeen <- c(NA, NA)
+  eighteen <- c(NA, NA)
+  nineteen <- c(NA, NA)
+  twenty <- c(NA, NA)
+  twentyone <- c(NA, NA)
+  twentytwo <- c(NA, NA)
+  twentythree <- c(NA, NA)
+  twentyfour <- c(NA, NA)
+  
+  DF <- data.frame(one, two, three, four, five, six, seven, eight, nine, ten, eleven, twelve, thirteen, fourteen, fiften, sixteen, seventeen, eighteen, nineteen, twenty, twentyone, twentytwo, twentythree, twentyfour)
+  
+}
+```
+
+
+
+
+
+
