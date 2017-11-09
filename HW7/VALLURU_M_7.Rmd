@@ -1,0 +1,34 @@
+---
+title: "VALLURU_M_7"
+output: html_notebook
+---
+
+
+Set the working directory
+```{r}
+setwd("D:/Mahitha/DataScience/HW7/")
+```
+
+
+Convert the downloaded csv file into a dataframe
+```{r}
+loadDF <- function() {
+  if(!exists("demographics")) {
+    demographics <- read.csv("Data Science - Demographics of India - Sheet1.csv", header = TRUE)
+  }
+}
+```
+
+
+To show that this is in fact a dataframe, we can call its class type:
+```{r}
+class(demographics)
+```
+
+
+To show that this is a dataframe, I can also print it out and show it to you:
+```{r}
+print(demographics)
+```
+
+As you can see, this data looks very clean, and the only thing I would personally do to clean this data is to remove the "Rank" row which is at the far left. Although it may have some symbolic meaning - the order of states by population from greatest to least - it is not necessary to have a separate row to show that. It can quite simply be written as a remark and also can be very easily seen by someone analyzing this data.
