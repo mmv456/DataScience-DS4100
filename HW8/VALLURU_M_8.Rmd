@@ -1,0 +1,316 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Install and Load the appropriate libraries.
+
+```{r}
+install.packages("RCurl")
+install.packages("scrapeR")
+library(RCurl)
+library(XML)
+library(scrapeR)
+```
+
+
+Get the URL and its path
+```{r}
+powerball <- getURL("http://www.powerball.com/powerball/pb_nbr_history.asp?startDate=11%2F11%2F2015&endDate=2%2F15%2F2017")
+
+powerball <- readLines(tc <- textConnection(powerball))
+
+```
+
+
+```{r}
+powerballPagetree <- htmlTreeParse(powerball, useInternalNodes = TRUE)
+```
+
+
+
+Create a dataframe.
+```{r}
+DrawDate = unlist(xpathApply(powerballPagetree, "//*/tr[@valign='middle']/td[1]", xmlValue))
+WhiteBall1 = unlist(xpathApply(powerballPagetree, "//*/tr[@valign='middle']/td[2]", xmlValue))
+WhiteBall2 = unlist(xpathApply(powerballPagetree, "//*/tr[@valign='middle']/td[3]", xmlValue))
+WhiteBall3 = unlist(xpathApply(powerballPagetree, "//*/tr[@valign='middle']/td[4]", xmlValue))
+WhiteBall4 = unlist(xpathApply(powerballPagetree, "//*/tr[@valign='middle']/td[5]", xmlValue))
+WhiteBall5 = unlist(xpathApply(powerballPagetree, "//*/tr[@valign='middle']/td[6]", xmlValue))
+PowerBall = unlist(xpathApply(powerballPagetree, "//*/tr[@valign='middle']/td[8]", xmlValue))
+
+loadDF <- data.frame(DrawDate, WhiteBall1, WhiteBall2, WhiteBall3, WhiteBall4, WhiteBall5, PowerBall)
+```
+
+
+
+
+Create an empty dataframe.
+```{r}
+
+Ball1 = c(1:69)
+Ball2 = c(1:69)
+Ball3 = c(1:69)
+Ball4 = c(1:69)
+Ball5 = c(1:69)
+PowerballRange = c(1:69)
+OccurenceDF <- data.frame(Ball1, Ball2, Ball3, Ball4, Ball5, PowerballRange)
+
+```
+
+
+Go through the original DF and go through each number.
+```{r}
+for(i in 1:nrow(OccurenceDF)) {
+  Ball1[i] <- 0
+  OccurenceDF <- data.frame(Ball1, Ball2, Ball3, Ball4, Ball5, PowerballRange)
+}
+
+for(i in 1:nrow(loadDF)) {
+  x <- as.numeric(WhiteBall1[i])
+  Ball1[x] <- Ball1[x] + 1
+  
+  OccurenceDF <- data.frame(Ball1, Ball2, Ball3, Ball4, Ball5, PowerballRange)
+}
+```
+
+
+
+Go through the original DF and go through each number.
+```{r}
+for(i in 1:nrow(OccurenceDF)) {
+  Ball2[i] <- 0
+  OccurenceDF <- data.frame(Ball1, Ball2, Ball3, Ball4, Ball5, PowerballRange)
+}
+
+for(i in 1:nrow(loadDF)) {
+  x <- as.numeric(WhiteBall2[i])
+  Ball2[x] <- Ball2[x] + 1
+  
+  OccurenceDF <- data.frame(Ball1, Ball2, Ball3, Ball4, Ball5, PowerballRange)
+}
+```
+
+
+
+
+Go through the original DF and go through each number.
+```{r}
+for(i in 1:nrow(OccurenceDF)) {
+  Ball3[i] <- 0
+  OccurenceDF <- data.frame(Ball1, Ball2, Ball3, Ball4, Ball5, PowerballRange)
+}
+
+for(i in 1:nrow(loadDF)) {
+  x <- as.numeric(WhiteBall3[i])
+  Ball3[x] <- Ball3[x] + 1
+  
+  OccurenceDF <- data.frame(Ball1, Ball2, Ball3, Ball4, Ball5, PowerballRange)
+}
+```
+
+
+Go through the original DF and go through each number.
+```{r}
+for(i in 1:nrow(OccurenceDF)) {
+  Ball4[i] <- 0
+  OccurenceDF <- data.frame(Ball1, Ball2, Ball3, Ball4, Ball5, PowerballRange)
+}
+
+for(i in 1:nrow(loadDF)) {
+  x <- as.numeric(WhiteBall4[i])
+  Ball4[x] <- Ball4[x] + 1
+  
+  OccurenceDF <- data.frame(Ball1, Ball2, Ball3, Ball4, Ball5, PowerballRange)
+}
+```
+
+
+
+Go through the original DF and go through each number.
+```{r}
+for(i in 1:nrow(OccurenceDF)) {
+  Ball5[i] <- 0
+  OccurenceDF <- data.frame(Ball1, Ball2, Ball3, Ball4, Ball5, PowerballRange)
+}
+
+for(i in 1:nrow(loadDF)) {
+  x <- as.numeric(WhiteBall5[i])
+  Ball5[x] <- Ball5[x] + 1
+  
+  OccurenceDF <- data.frame(Ball1, Ball2, Ball3, Ball4, Ball5, PowerballRange)
+}
+```
+
+
+
+
+Go through the original DF and go through each number.
+```{r}
+for(i in 1:nrow(OccurenceDF)) {
+  PowerballRange[i] <- 0
+  OccurenceDF <- data.frame(Ball1, Ball2, Ball3, Ball4, Ball5, PowerballRange)
+}
+
+for(i in 1:nrow(loadDF)) {
+  x <- as.numeric(PowerBall[i])
+  PowerballRange[x] <- PowerballRange[x] + 1
+  
+  OccurenceDF <- data.frame(Ball1, Ball2, Ball3, Ball4, Ball5, PowerballRange)
+}
+```
+
+
+Ball Number from Ball1 that occurred most frequently
+```{r}
+which.max(OccurenceDF$Ball1)
+```
+
+
+
+Ball Number from Ball2 that occurred most frequently
+```{r}
+which.max(OccurenceDF$Ball2)
+```
+
+
+
+Ball Number from Ball3 that occurred most frequently
+```{r}
+which.max(OccurenceDF$Ball3)
+```
+
+
+
+Ball Number from Ball4 that occurred most frequently
+```{r}
+which.max(OccurenceDF$Ball4)
+```
+
+
+
+Ball Number from Ball5 that occurred most frequently
+```{r}
+which.max(OccurenceDF$Ball5)
+```
+
+
+
+
+
+Number from Powerball that occurred most frequently
+```{r}
+which.max(OccurenceDF$PowerballRange)
+```
+
+
+
+Which ball number occurred highest of all 6 balls
+
+```{r}
+one <- max(OccurenceDF$Ball1)
+two <- max(OccurenceDF$Ball2)
+three <- max(OccurenceDF$Ball3)
+four <- max(OccurenceDF$Ball4)
+five <- max(OccurenceDF$Ball5)
+power <- max(OccurenceDF$PowerballRange)
+
+numbers <- data.frame(one, two, three, four, five, power)
+
+max <- 0
+if (one > max) { 
+  max <- one
+}
+if (two > max) {
+  max <- two
+}
+if (three > max) {
+  max <- three
+}
+if (four > max) {
+  max <- four
+}
+if (five > max) {
+  max <- five
+}
+if (power > max) {
+  max <- power
+}
+
+
+outputHighest <- function() {
+  if (max == one) {
+    return(which.max(OccurenceDF$Ball1))
+  }
+  if (max == two) {
+  return(which.max(OccurenceDF$Ball2))
+  }
+  if (max == three) {
+  return(which.max(OccurenceDF$Ball3))
+  }
+  if (max == four) {
+  return(which.max(OccurenceDF$Ball4))
+  }
+  if (max == five) {
+  return(which.max(OccurenceDF$Ball5))
+  }
+  if (max == power) {
+  return(which.max(OccurenceDF$PowerballRange))
+  }
+}
+
+```
+
+
+```{r}
+outputHighest()
+```
+
+
+
+
+Here are the individual occurrences for which balls occurred how many times
+```{r}
+factor(OccurenceDF$Ball1, levels = c(1:69))
+```
+
+
+```{r}
+factor(OccurenceDF$Ball2, levels = c(1:69))
+```
+
+
+```{r}
+factor(OccurenceDF$Ball3, levels = c(1:69))
+```
+
+
+```{r}
+factor(OccurenceDF$Ball4, levels = c(1:69))
+```
+
+
+```{r}
+factor(OccurenceDF$Ball5, levels = c(1:69))
+```
+
+
+```{r}
+factor(OccurenceDF$PowerballRange, levels = c(1:69))
+```
+
+
+
+As you can see, the amount of Balls for Ball1 is usually in the early numbers. They are rarely in the last numbers, from 35 to 69.
+The distribution of the balls later on have increased as the Ball number increases.
+This does not include the Powerball, as it can clearly be seen that it follows the trend of Ball1.
+
+
+
+
+
+
+
+
+
+
