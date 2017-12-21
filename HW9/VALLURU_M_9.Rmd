@@ -1,0 +1,219 @@
+---
+title: "VALLURU_M_9"
+output: html_notebook
+---
+
+Load libraries
+
+```{r}
+install.packages("RMySQL")
+library(RMySQL)
+library(DBI)
+```
+
+
+Set working directory.
+```{r}
+setwd("D:/Mahitha/DataScience/HW9/")
+```
+
+
+Function that loads the csv file
+```{r}
+loadDF <- function() {
+  if(!exists("birdstrikes")) {
+    temp <- read.csv("birdstrikes.csv")
+  }
+}
+```
+
+
+Only keep certain columns for birdstrikes
+```{r}
+birdstrikes <- temp[,c(1,2, 6, 10, 11, 15, 16, 34)]
+```
+
+
+Clean up the date column format.
+There is a format called POSIX, and I'll be using that.
+```{r}
+birdstrikes$FlightDate <- as.POSIXct(birdstrikes$FlightDate, format="%m/%d/%Y")
+```
+
+
+
+Now, I'll be creating tables to organize my data.
+There will be sevearl tables:
+  1. Aircraft Type
+  2. Origin
+  3. Airline Operator
+  4. Impact to Flight
+  5. Incident
+
+
+This will be the creation of the Aircraft type table
+```{r}
+type_id <- 1:length(levels(birdstrikes$Aircraft..Type))
+type <- levels(birdstrikes$Aircraft..Type)  # The type of Aircraft, so "", Airplane, C, or Helicopter
+aircraft <- data.frame(type_id, type)
+
+aircraft$type[aircraft$type == ""] <- NA   # let all incomplete data be equal to NA
+```
+
+
+
+This is the Airports table
+```{r}
+origins <- birdstrikes[, c("Airport..Name", "Origin.State")]
+
+origins$Airport..Name[origins$Airport..Name == "UNKNOWN"] <- NA  # let all data with unknown values be set to NA
+origins$Airport..Name[origins$Airport..Name == ""] <- NA         # let all incomplete data be equal to NA
+
+origins <- unique(origins)   # get rid of all duplicate data, we only want the unique ones
+
+origins$origin_id <- 1:nrow(origins)  # add an ID, of course
+```
+
+
+
+This is the Airline Operators table
+```{r}
+op_id <- 1:length(levels(birdstrikes$Aircraft..Airline.Operator))
+op_name <- levels(birdstrikes$Aircraft..Airline.Operator)   # includes all the operators for airplanes
+
+operators <- data.frame(op_id, op_name)
+
+```
+
+
+This is the Impact to Flight table
+```{r}
+effect_code <- 1:length(levels(birdstrikes$Effect..Impact.to.flight))
+description <- levels(birdstrikes$Effect..Impact.to.flight)   # includes the description of what happened to the flight, if anything
+
+effects <- data.frame(effect_code, description)
+
+effects$description[effects$description == ""] <- NA  # clean the descriptions, anything empty will be NA
+```
+
+
+
+
+This is the Incidents table
+```{r}
+
+incidents <- birdstrikes
+
+incidents$Aircraft..Type <- aircraft$type_id[match(incidents$Aircraft..Type, aircraft$type)]
+
+incidents$Effect..Impact.to.flight <- effects$effect_code[match(incidents$Effect..Impact.to.flight, effects$description)]
+
+incidents$Aircraft..Airline.Operator <- operators$op_id[match(incidents$Aircraft..Airline.Operator, operators$op_name)]
+
+
+# Because a lot of the tables have an ID as a column, here is a function that gets the ID.
+getId <- function(x,y) {
+  
+  if (is.na(x)) {
+    id <- origins$origin_id[which(is.na(origins$Airport..Name) & origins$Origin.State == y)]
+  } 
+  
+  else {
+    id <- origins$origin_id[which(origins$Airport..Name == x & origins$Origin.State == y)]
+  }
+
+  id <- as.numeric(id)
+
+  return(id)
+
+}
+
+# Now for some cleaning
+incidents$Airport..Name[incidents$Airport..Name=="UNKNOWN"] <- NA
+incidents$Airport..Name[incidents$Airport..Name==""] <- NA
+incidents$origin <- mapply(getId, incidents$Airport..Name, incidents$Origin.State)
+incidents <- incidents[-c(2,7)]
+incidents$Feet.above.ground[incidents$Feet.above.ground==""] <- NA
+
+
+
+```
+
+
+
+
+
+```{r}
+write.table(aircraft,"aircraft.csv", col.names=TRUE, row.names=FALSE, na="NULL", quote=TRUE)
+
+write.table(effects, "effects.csv",  col.names=TRUE, row.names=FALSE, na="NULL", quote=TRUE)
+
+write.table(operators, "operators.csv",  col.names=TRUE, row.names=FALSE, na="NULL", quote=TRUE)
+
+write.table(origins, "origins.csv",  col.names=TRUE, row.names=FALSE, na="NULL", quote=TRUE)
+
+write.table(incidents, "incidents.csv",  col.names=TRUE, row.names=FALSE, na="NULL", quote=TRUE)
+```
+
+
+
+Connect to MySQL
+```{r}
+mydb <- dbConnect(MySQL(), 
+                  user="XXX", 
+                  host="localhost",
+                  password="XXX", 
+                  dbname="birdstrikes")
+```
+
+
+```{r}
+con <- dbConnect(MySQL(),
+                 user = "root",
+                 password = "XXX",
+                 host = "127.0.0.1",
+                 port = 3306,
+                 dbname = "birdstrikes")
+
+dbWriteTable(conn = con, name = "Aircraft", value = as.data.frame(aircraft))
+
+dbWriteTable(conn = con, name = "Effects", value = as.data.frame(effects))
+
+dbWriteTable(conn = con, name = "Incidents", value = as.data.frame(incidents))
+
+dbWriteTable(conn = con, name = "Operators", value = as.data.frame(operators))
+
+dbWriteTable(conn = con, name = "Origins", value = as.data.frame(origins))
+
+```
+
+
+```{r}
+# What is the total number of birdstrikes
+dbGetQuery(mydb, "SELECT count(*) FROM incidents")
+
+# Number of birstrikes by airline
+dbGetQuery(mydb, "SELECT airline_name, count(*) FROM operators, incidents WHERE incidents.operator = operators.op_id GROUP BY airline_name")
+
+# Number of birdstrikes with Origin from Boston
+dbGetQuery(mydb, "SELECT count(*) FROM incidents i, origins o WHERE i.origin = o.origin_id AND o.airport_name = \"LOGAN INTL\"")
+
+# birdstrike incidents above 10,000 feet
+dbGetQuery(mydb, "SELECT count(*) FROM incidents WHERE height > 10000")
+
+# birdstrike incidents each month for a given year
+dbGetQuery(mydb, "SELECT count(*) FROM incidents i WHERE i.year = x")
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
